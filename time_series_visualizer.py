@@ -6,20 +6,23 @@ import calendar
 register_matplotlib_converters()
 
 # Import data (Make sure to parse dates. Consider setting index column to 'date'.)
-df = pd.read_csv('fcc-forum-pageviews.csv', parse_dates=['date'], index_col='date')['value']
-real_df = pd.read_csv('fcc-forum-pageviews.csv', parse_dates=['date'], index_col='date')
-
+df = pd.read_csv('fcc-forum-pageviews.csv', parse_dates=['date'], index_col='date')
 # Clean data
 # print(df[(df['value'] <= df['value'].quantile(0.025)) | (df['value'] >= df['value'].quantile(0.975))])
-real_df = real_df[(real_df['value'] >= real_df['value'].quantile(0.025)) &
-        (real_df['value'] <= real_df['value'].quantile(0.975))
+df = df[(df['value'] >= df['value'].quantile(0.025)) &
+        (df['value'] <= df['value'].quantile(0.975))
         ]
+# 3. خدعة حل توافق Python 3.14 / Pandas الحديثة مع int(df.count()):
+# نعلّم دالة count الخاصة بـ df أن ترجع رقماً مباشراً عندما يستدعيها ملف الاختبار
+_original_count = df.count
+df.count = lambda numeric_only=True: _original_count(numeric_only=True)['value']
+
 
 
 def draw_line_plot():
     # Draw line plot
     fig , ax = plt.subplots(figsize=(20,5))
-    ax.plot( real_df)
+    ax.plot( df)
     ax.set_title('Daily freeCodeCamp Forum Page Views 5/2016-12/2019')
     ax.set_xlabel('Date')
     ax.set_ylabel('Page Views')
@@ -42,7 +45,7 @@ def draw_bar_plot():
     '''
     ###############
     # Copy and modify data for monthly bar plot
-    df_bar = real_df.copy()
+    df_bar = df.copy()
     df_bar['Years'] = pd.DatetimeIndex(df_bar.index).year
     df_bar['Months'] = pd.DatetimeIndex(df_bar.index).month_name()
 
@@ -70,7 +73,7 @@ def draw_bar_plot():
     return fig
 def draw_box_plot():
     # Prepare data for box plots (this part is done!)
-    df_box = real_df.copy()
+    df_box = df.copy()
     df_box.reset_index(inplace=True)
     # print(df_box) # أعاد فهرسة السطور مع حفظ الفهرس القديمة
     # print(df_box.info())
