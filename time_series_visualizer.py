@@ -6,17 +6,20 @@ import calendar
 register_matplotlib_converters()
 
 # Import data (Make sure to parse dates. Consider setting index column to 'date'.)
-df = pd.read_csv('fcc-forum-pageviews.csv', parse_dates=['date'], index_col='date')
+df = pd.read_csv('fcc-forum-pageviews.csv', parse_dates=['date'], index_col='date')['value']
+real_df = pd.read_csv('fcc-forum-pageviews.csv', parse_dates=['date'], index_col='date')
 
 # Clean data
 # print(df[(df['value'] <= df['value'].quantile(0.025)) | (df['value'] >= df['value'].quantile(0.975))])
-df = df[(df['value'] >= df['value'].quantile(0.025)) & (df['value'] <= df['value'].quantile(0.975))]
+real_df = real_df[(real_df['value'] >= real_df['value'].quantile(0.025)) &
+        (real_df['value'] <= real_df['value'].quantile(0.975))
+        ]
 
 
 def draw_line_plot():
     # Draw line plot
     fig , ax = plt.subplots(figsize=(20,5))
-    ax.plot( df)
+    ax.plot( real_df)
     ax.set_title('Daily freeCodeCamp Forum Page Views 5/2016-12/2019')
     ax.set_xlabel('Date')
     ax.set_ylabel('Page Views')
@@ -29,56 +32,45 @@ def draw_line_plot():
     return fig
 
 def draw_bar_plot():
+    #####################
+    '''
+    كان ثم مشكلة في تصحيح الاختبار رسم الأعمدة إذ يطلب أن يكون عدد الأعمدة 49 وهي عندي 57 والمشكلة هنا أن بداية الجدول من شهر مايو وأنا لما رسمت بالمكتبة المتطورة جعلت هي للأشهر التي قبل ذلك أعمدة فارغة لم أرها على الرسم ورآه المصحح الآلي وتصحيح ذلك أن أستعمل مكتبة التحليل نفسها في الرسم وحساب ذلك أن الأشهر 44 وأن في دليل الرسم الذي يوضح اللون المعطى لكل رسم 4 ومربع أبيض هو خلفية الرسم كله
+
+    مكتبة التحليل pandas
+    المكتبة المتطورة sns
+    دليل الرسم legend
+    '''
+    ###############
     # Copy and modify data for monthly bar plot
-    df_copy = df.copy()
-    df_copy['Years'] = pd.DatetimeIndex(df_copy.index).year
-    df_copy['Months'] = pd.DatetimeIndex(df_copy.index).month
-    df_bar = df_copy.groupby(['Years', 'Months']).mean()
-    # print(df_bar.info())
+    df_bar = real_df.copy()
+    df_bar['Years'] = pd.DatetimeIndex(df_bar.index).year
+    df_bar['Months'] = pd.DatetimeIndex(df_bar.index).month_name()
+
+    df_grouped = df_bar.groupby(['Years', 'Months']).mean().unstack()
+
+    # ترتيب الشهور 
+    months_ordered = calendar.month_name[1:]
+    df_grouped.columns = (df_grouped.columns.droplevel())
+    df_grouped = df_grouped[months_ordered]
+
+
+    '''
+    .unstack()
+    هذه الدالة تحول العمود الأخير في الفهرس (وليس في الجدول فانتبه) إلى صف والغرض من ذلك إعداد الجدول ليناسب الرسم بدالة مكتبة التحليل إذ تطلب المكتبة أن يكون الجدول ثاني الأبعاد فتكون صفوف الجدول للمحور الأفقي ويفرق كل مستطيل على اللون حسب أعمدة الجدول المعطى
+    مكتبة التحليل pandas
+
+    '''
     # Draw bar plot
-    fig, ax = plt.subplots()
-    # palette = sns.color_palette("Set3", 10)
-    # طرق لجعل الأشهر بالأسماء لا الأرقام
-    # تغيير عمود الشهور من الأرقام إلى الأسماء بطريقين
-        # DatetimeIndex
 
-    df_copy['Months'] = pd.DatetimeIndex(df_copy.index).month_name()
-    df_bar = df_copy.groupby(['Years', 'Months']).mean()
-    # print(df_copy)
-    ax1= sns.barplot(df_bar, x='Years', y='value', hue='Months',hue_order=list(calendar.month_name[1:]) ,ax=ax, palette='muted')
+    fig = df_grouped.plot(kind='bar').get_figure()
     plt.ylabel("Average Page Views")
-    # num_bars = len(ax1.containers[0])
-    # print(f"Number of bars: {num_bars}")
 
-        # mapping
-
-
-    # تعديل label of legend
-    '''
-    ax = sns.barplot(df_bar, x='Years', y='value', hue='Months', palette='bright')
-    print(df_bar)
-    ax.set_ylabel('Average Page Views')
-    # ax.legend(list(calendar.month_name)[1:])
-    handles, lables = ax.get_legend_handles_labels()
-    title = ax.get_legend().get_title().get_text()
-    # print('_'*20, title)
-    new_labels = list(calendar.month_name)[1:]
-    plt.legend(
-        handles=handles, 
-        title=title, 
-        labels=new_labels
-    )
-
-    # حل رابع محتمل
-    # هل يمكن إعطاء هذه الخاصية شيئا ليس في العمود المعطى لأمها  hue_order
-    # أمها: hue
-    '''
     # Save image and return fig (don't change this part)
     fig.savefig('bar_plot.png')
     return fig
 def draw_box_plot():
     # Prepare data for box plots (this part is done!)
-    df_box = df.copy()
+    df_box = real_df.copy()
     df_box.reset_index(inplace=True)
     # print(df_box) # أعاد فهرسة السطور مع حفظ الفهرس القديمة
     # print(df_box.info())
